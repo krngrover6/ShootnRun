@@ -94,7 +94,7 @@ public class EnemyAI : MonoBehaviour
         // Load default projectile if none specified
         if (projectilePrefab == null)
         {
-            projectilePrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemyProjectile.prefab");
+            projectilePrefab = Resources.Load<GameObject>("EnemyProjectile");
         }
 
         var testingControls = FindFirstObjectByType<TestingControls>();

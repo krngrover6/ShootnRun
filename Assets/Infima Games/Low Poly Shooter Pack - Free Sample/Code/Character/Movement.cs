@@ -188,7 +188,7 @@ namespace InfimaGames.LowPolyShooterPack
                     midAirJumpsRemaining--;
 
                     // Spawn cartoon double-jump visual flare at feet
-                    var jumpSpark = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Epic Toon FX/Prefabs/Combat/Explosions/BulletExplosion/BulletExplosionBlue.prefab");
+                    var jumpSpark = Resources.Load<GameObject>("VFX/BulletExplosionBlue");
                     if (jumpSpark != null)
                     {
                         Instantiate(jumpSpark, transform.position + Vector3.up * 0.1f, Quaternion.identity);
