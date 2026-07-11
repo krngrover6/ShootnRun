@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using System.Collections;
 using InfimaGames.LowPolyShooterPack;
@@ -39,6 +39,20 @@ public class Projectile : MonoBehaviour {
 		//Ignore collisions with other projectiles.
 		if (collision.gameObject.GetComponent<Projectile>() != null)
 			return;
+
+		//If bullet collides with an enemy
+		var enemyAI = collision.gameObject.GetComponent<EnemyAI>();
+		if (enemyAI != null) 
+		{
+			enemyAI.TakeDamage(25f);
+			if (bloodImpactPrefabs != null && bloodImpactPrefabs.Length > 0)
+			{
+				Instantiate(bloodImpactPrefabs[UnityEngine.Random.Range(0, bloodImpactPrefabs.Length)], 
+					transform.position, Quaternion.LookRotation(collision.contacts[0].normal));
+			}
+			Destroy(gameObject);
+			return;
+		}
 		
 		// //Ignore collision if bullet collides with "Player" tag
 		// if (collision.gameObject.CompareTag("Player")) 
