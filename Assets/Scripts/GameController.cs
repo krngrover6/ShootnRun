@@ -104,6 +104,13 @@ public class GameController : MonoBehaviour
         // Ensure it is named correctly so it doesn't have "(Clone)" appended (optional, but clean)
         enemyInstance.name = enemyPrefab.name;
 
+        // Parent under the Enemies folder to keep the hierarchy clean during gameplay
+        var enemiesGroup = GameObject.Find("Enemies");
+        if (enemiesGroup != null)
+        {
+            enemyInstance.transform.SetParent(enemiesGroup.transform);
+        }
+
         activeEnemiesCount++;
     }
 

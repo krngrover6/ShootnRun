@@ -9,6 +9,8 @@ public class GameHUD : MonoBehaviour
     [SerializeField] private TextMeshProUGUI waveText;
     [SerializeField] private TextMeshProUGUI enemiesText;
 
+    [SerializeField] private UnityEngine.UI.Slider healthSlider;
+
     [Header("Game Over Screen")]
     [SerializeField] private GameObject gameOverPanel;
 
@@ -25,6 +27,23 @@ public class GameHUD : MonoBehaviour
         if (healthText != null)
         {
             healthText.text = $"HP: {Mathf.CeilToInt(current)} / {max}";
+        }
+
+        if (healthSlider != null)
+        {
+            healthSlider.maxValue = max;
+            healthSlider.value = current;
+
+            // Change color dynamically from green to yellow to red
+            var fillImage = healthSlider.fillRect.GetComponent<UnityEngine.UI.Image>();
+            if (fillImage != null)
+            {
+                float pct = current / max;
+                if (pct > 0.5f)
+                    fillImage.color = Color.Lerp(Color.yellow, Color.green, (pct - 0.5f) * 2f);
+                else
+                    fillImage.color = Color.Lerp(Color.red, Color.yellow, pct * 2f);
+            }
         }
     }
 
@@ -54,9 +73,13 @@ public class GameHUD : MonoBehaviour
 
     public void RestartGame()
     {
-        // Resume time
         Time.timeScale = 1f;
-        // Reload active scene
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    public void GoToMainMenu()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("MainMenuScene");
     }
 }

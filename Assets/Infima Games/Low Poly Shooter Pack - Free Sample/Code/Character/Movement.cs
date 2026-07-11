@@ -1,4 +1,4 @@
-﻿// Copyright 2021, Infima Games. All Rights Reserved.
+// Copyright 2021, Infima Games. All Rights Reserved.
 
 using System.Linq;
 using UnityEngine;
@@ -62,6 +62,15 @@ namespace InfimaGames.LowPolyShooterPack
         /// True if the character is currently grounded.
         /// </summary>
         private bool grounded;
+
+        [Header("Jumping Settings")]
+        [SerializeField] private float jumpForce = 7.0f;
+        [SerializeField] private float jumpHoldForce = 6.0f;
+        [SerializeField] private float jumpHoldDuration = 0.36f;
+
+        private bool isJumping;
+        private float jumpTimeCounter;
+        private int midAirJumpsRemaining = 0;
 
         /// <summary>
         /// Player Character.
@@ -129,6 +138,9 @@ namespace InfimaGames.LowPolyShooterPack
 
             //Set grounded. Now we know for sure that we're grounded.
             grounded = true;
+            
+            // Reset double jump availability upon grounding
+            midAirJumpsRemaining = 0;
         }
 			
         protected override void FixedUpdate()
@@ -146,8 +158,67 @@ namespace InfimaGames.LowPolyShooterPack
             //Get the equipped weapon!
             equippedWeapon = playerCharacter.GetInventory().GetEquipped();
             
+            // Handle Jump
+            HandleJumping();
+
             //Play Sounds!
             PlayFootstepSounds();
+        }
+
+        private void HandleJumping()
+        {
+            if (UnityEngine.InputSystem.Keyboard.current == null) return;
+            var keyboard = UnityEngine.InputSystem.Keyboard.current;
+
+            if (keyboard.spaceKey.wasPressedThisFrame)
+            {
+                if (grounded)
+                {
+                    isJumping = true;
+                    jumpTimeCounter = jumpHoldDuration;
+                    Velocity = new Vector3(Velocity.x, jumpForce, Velocity.z);
+                    grounded = false;
+                }
+                else if (midAirJumpsRemaining > 0)
+                {
+                    // Mid-air Jump!
+                    isJumping = true;
+                    jumpTimeCounter = jumpHoldDuration;
+                    Velocity = new Vector3(Velocity.x, jumpForce * 1.1f, Velocity.z);
+                    midAirJumpsRemaining--;
+
+                    // Spawn cartoon double-jump visual flare at feet
+                    var jumpSpark = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Epic Toon FX/Prefabs/Combat/Explosions/BulletExplosion/BulletExplosionBlue.prefab");
+                    if (jumpSpark != null)
+                    {
+                        Instantiate(jumpSpark, transform.position + Vector3.up * 0.1f, Quaternion.identity);
+                    }
+                }
+            }
+
+            if (keyboard.spaceKey.isPressed && isJumping)
+            {
+                if (jumpTimeCounter > 0)
+                {
+                    Velocity = new Vector3(Velocity.x, jumpForce + jumpHoldForce * (jumpTimeCounter / jumpHoldDuration), Velocity.z);
+                    jumpTimeCounter -= Time.deltaTime;
+                }
+                else
+                {
+                    isJumping = false;
+                }
+            }
+
+            if (keyboard.spaceKey.wasReleasedThisFrame)
+            {
+                isJumping = false;
+            }
+        }
+
+        public void AddJumpBoost()
+        {
+            // Add mid-air jump charges (cap at 5)
+            midAirJumpsRemaining = Mathf.Min(midAirJumpsRemaining + 1, 5);
         }
 
         #endregion
@@ -178,7 +249,7 @@ namespace InfimaGames.LowPolyShooterPack
             #endregion
             
             //Update Velocity.
-            Velocity = new Vector3(movement.x, 0.0f, movement.z);
+            Velocity = new Vector3(movement.x, Velocity.y, movement.z);
         }
 
         /// <summary>

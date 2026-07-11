@@ -1,4 +1,4 @@
-﻿// Copyright 2021, Infima Games. All Rights Reserved.
+// Copyright 2021, Infima Games. All Rights Reserved.
 
 using System;
 using UnityEngine;
@@ -199,6 +199,11 @@ namespace InfimaGames.LowPolyShooterPack
 
 		protected override void Update()
 		{
+			if (cursorLocked && UnityEngine.InputSystem.Keyboard.current != null)
+			{
+				holdingButtonRun = UnityEngine.InputSystem.Keyboard.current.shiftKey.isPressed;
+			}
+
 			//Match Aim.
 			aiming = holdingButtonAim && CanAim();
 			//Match Run.

@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 4482905162122697079}
   - component: {fileID: 2716224142826670427}
   - component: {fileID: 8533874752900668228}
+  - component: {fileID: 1465369139587659305}
   m_Layer: 0
   m_Name: Enemy_Animal_04
   m_TagString: Untagged
@@ -131,6 +132,21 @@ MonoBehaviour:
   wobbleAngle: 8
   deathEffectPrefab: {fileID: 1427962332153456, guid: 301583a5af63a494298d60cd9f296909,
     type: 3}
+--- !u!114 &1465369139587659305
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1416832664895841983}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a35fd54ac079a8b47aa6549789157333, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Ilumisoft.RadarSystem::Ilumisoft.RadarSystem.Locatable
+  iconPrefab: {fileID: 4922837886278913688, guid: 64491c38b1af452409456a53259a0f43,
+    type: 3}
+  clampOnRadar: 1
 --- !u!1 &4535631658643543714
 GameObject:
   m_ObjectHideFlags: 0
@@ -226,7 +242,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_SciFi_Animal_04_V1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 4854412783794576494, guid: 2618ff653948a0546a1cf2450d0b40d1, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []

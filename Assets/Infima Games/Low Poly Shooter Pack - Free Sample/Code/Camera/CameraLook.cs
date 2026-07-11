@@ -1,4 +1,4 @@
-﻿// Copyright 2021, Infima Games. All Rights Reserved.
+// Copyright 2021, Infima Games. All Rights Reserved.
 
 using UnityEngine;
 
@@ -29,6 +29,12 @@ namespace InfimaGames.LowPolyShooterPack
         [SerializeField]
         private float interpolationSpeed = 25.0f;
         
+        #endregion
+
+        #region PROPERTIES
+
+        public Vector2 Sensitivity { get => sensitivity; set => sensitivity = value; }
+
         #endregion
         
         #region FIELDS
