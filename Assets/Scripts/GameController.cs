@@ -27,6 +27,19 @@ public class GameController : MonoBehaviour
         // Resume time at startup
         Time.timeScale = 1f;
 
+        // Difficulty scaling (0 = Easy, 1 = Medium, 2 = Hard; Medium keeps the authored values)
+        int difficulty = PlayerPrefs.GetInt("Difficulty", 1);
+        if (difficulty == 0)
+        {
+            baseEnemyCount = Mathf.Max(1, baseEnemyCount - 1);
+            enemiesPerWaveIncrease = Mathf.Max(1, enemiesPerWaveIncrease - 1);
+        }
+        else if (difficulty == 2)
+        {
+            baseEnemyCount += 2;
+            enemiesPerWaveIncrease += 1;
+        }
+
         // Find HUD
         hud = FindFirstObjectByType<GameHUD>();
 
@@ -57,6 +70,13 @@ public class GameController : MonoBehaviour
         {
             hud.UpdateWave(currentWave);
             hud.UpdateEnemiesRemaining(0);
+        }
+
+        // New wave = shield claim replenished
+        var playerHealth = FindFirstObjectByType<PlayerHealth>();
+        if (playerHealth != null)
+        {
+            playerHealth.RefreshShield();
         }
 
         // Breather delay

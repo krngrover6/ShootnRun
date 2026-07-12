@@ -13,8 +13,14 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private Slider sensitivitySlider;
     [SerializeField] private TextMeshProUGUI sensitivityText;
 
+    [Header("Difficulty")]
+    [SerializeField] private TextMeshProUGUI difficultyLabel;
+
+    private static readonly string[] DifficultyNames = { "EASY", "MEDIUM", "HARD" };
+
     private void Start()
     {
+        UpdateDifficultyLabel();
         // Unlock and show cursor in Main Menu
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
@@ -32,6 +38,23 @@ public class MainMenu : MonoBehaviour
             sensitivitySlider.value = savedSensitivity;
         }
         UpdateSensitivityText(savedSensitivity);
+    }
+
+    public void CycleDifficulty()
+    {
+        int difficulty = PlayerPrefs.GetInt("Difficulty", 1);
+        difficulty = (difficulty + 1) % 3;
+        PlayerPrefs.SetInt("Difficulty", difficulty);
+        PlayerPrefs.Save();
+        UpdateDifficultyLabel();
+    }
+
+    private void UpdateDifficultyLabel()
+    {
+        if (difficultyLabel != null)
+        {
+            difficultyLabel.text = $"DIFFICULTY: {DifficultyNames[PlayerPrefs.GetInt("Difficulty", 1)]}";
+        }
     }
 
     public void StartGame()

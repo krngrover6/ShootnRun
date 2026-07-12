@@ -14,12 +14,65 @@ public class GameHUD : MonoBehaviour
     [Header("Game Over Screen")]
     [SerializeField] private GameObject gameOverPanel;
 
+    [Header("Shield")]
+    [SerializeField] private UnityEngine.UI.Image shieldOverlay;
+    [SerializeField] private TextMeshProUGUI shieldText;
+    [SerializeField] private TextMeshProUGUI shieldHintText;
+
+    private bool hintVisible;
+
     private void Start()
     {
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(false);
         }
+
+        if (shieldOverlay != null) shieldOverlay.gameObject.SetActive(false);
+        if (shieldText != null) shieldText.gameObject.SetActive(false);
+        if (shieldHintText != null) shieldHintText.gameObject.SetActive(false);
+    }
+
+    private void Update()
+    {
+        // Glowing pulse on the shield hint
+        if (hintVisible && shieldHintText != null)
+        {
+            float pulse = 0.65f + 0.35f * Mathf.Sin(Time.unscaledTime * 5f);
+            var c = shieldHintText.color;
+            shieldHintText.color = new Color(c.r, c.g, c.b, pulse);
+            shieldHintText.transform.localScale = Vector3.one * (1f + 0.04f * Mathf.Sin(Time.unscaledTime * 5f));
+        }
+    }
+
+    public void UpdateShield(float current, float max)
+    {
+        bool active = current > 0f;
+
+        if (shieldOverlay != null)
+        {
+            shieldOverlay.gameObject.SetActive(active);
+            if (active)
+            {
+                // Tint fades as the shield wears down, so the screen itself tells you how much is left
+                float pct = current / max;
+                var c = shieldOverlay.color;
+                shieldOverlay.color = new Color(c.r, c.g, c.b, 0.06f + 0.16f * pct);
+            }
+        }
+
+        if (shieldText != null)
+        {
+            shieldText.gameObject.SetActive(active);
+            if (active) shieldText.text = $"SHIELD: {Mathf.CeilToInt(current)}";
+        }
+    }
+
+    public void SetShieldHint(bool visible)
+    {
+        if (hintVisible == visible) return;
+        hintVisible = visible;
+        if (shieldHintText != null) shieldHintText.gameObject.SetActive(visible);
     }
 
     public void UpdateHealth(float current, float max)

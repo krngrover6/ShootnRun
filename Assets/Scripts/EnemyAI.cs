@@ -109,6 +109,20 @@ public class EnemyAI : MonoBehaviour
         {
             speed = testingControls.EnemyMoveSpeed;
         }
+
+        // Difficulty scaling (0 = Easy, 1 = Medium, 2 = Hard)
+        int difficulty = PlayerPrefs.GetInt("Difficulty", 1);
+        if (difficulty == 0)
+        {
+            damage *= 0.7f;
+            speed *= 0.9f;
+        }
+        else if (difficulty == 2)
+        {
+            damage *= 1.4f;
+            speed *= 1.15f;
+        }
+
         agent.speed = speed;
         
         // Find player character via Infima Games Service Locator
