@@ -58,6 +58,13 @@ public class EnemyAI : MonoBehaviour
     // Stuck rescue state
     private float stuckTimer;
     private Vector3 lastPosition;
+    private int rescueStage;
+
+    // Path repathing is throttled - recalculating every frame per enemy is wasted
+    // CPU once several are alive at once, and the player doesn't move fast enough
+    // for a short delay to matter.
+    private float pathUpdateTimer;
+    private const float pathUpdateInterval = 0.2f;
 
     public float MoveSpeed
     {
@@ -122,7 +129,7 @@ public class EnemyAI : MonoBehaviour
         lastPosition = transform.position;
     }
 
-    private void Update()
+private void Update()
     {
         if (player == null) return;
 
@@ -149,37 +156,29 @@ public class EnemyAI : MonoBehaviour
         // Follow player path using NavMeshAgent with SamplePosition fallback
         if (agent.enabled && agent.isOnNavMesh)
         {
-            NavMeshHit nmHit;
-            // Search inside a wide radius (30 meters) to find the closest valid NavMesh spot near player
-            if (NavMesh.SamplePosition(player.transform.position, out nmHit, 30.0f, NavMesh.AllAreas))
+            // Throttle repathing - recalculating a destination every single frame per
+            // enemy is unnecessary CPU cost that adds up once several are alive at once.
+            pathUpdateTimer -= Time.deltaTime;
+            if (pathUpdateTimer <= 0f)
             {
-                agent.SetDestination(nmHit.position);
-            }
-            else
-            {
-                agent.SetDestination(player.transform.position);
-            }
+                pathUpdateTimer = pathUpdateInterval;
 
-            // Stuck rescue checker
-            if (Vector3.Distance(transform.position, lastPosition) < 0.04f * Time.deltaTime * 60f && distanceToPlayer > attackRange)
-            {
-                stuckTimer += Time.deltaTime;
-                if (stuckTimer >= 1.2f)
+                NavMeshHit nmHit;
+                // Search inside a wide radius (30 meters) to find the closest valid NavMesh spot near player
+                if (NavMesh.SamplePosition(player.transform.position, out nmHit, 30.0f, NavMesh.AllAreas))
                 {
-                    // Trigger a physics leap jump in player's direction to unstick!
-                    StartLeapAttack();
-                    stuckTimer = 0f;
+                    agent.SetDestination(nmHit.position);
+                }
+                else
+                {
+                    agent.SetDestination(player.transform.position);
                 }
             }
-            else
-            {
-                stuckTimer = 0f;
-            }
-            lastPosition = transform.position;
         }
-        else if (!isLeaping)
+        else
         {
-            // If they fall off or are pushed off the NavMesh walkways, they should walk directly towards the player!
+            // Off the NavMesh entirely: walk directly towards the player while the
+            // rescue logic below works on getting us back onto the mesh.
             Vector3 directDir = (player.transform.position - transform.position);
             directDir.y = 0;
             if (directDir.sqrMagnitude > 0.01f)
@@ -187,15 +186,39 @@ public class EnemyAI : MonoBehaviour
                 transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(directDir), Time.deltaTime * 6f);
                 transform.position = Vector3.MoveTowards(transform.position, new Vector3(player.transform.position.x, transform.position.y, player.transform.position.z), speed * Time.deltaTime);
             }
+        }
 
-            // Periodic off-mesh leap jump towards the player to jump back onto platforms
-            stuckTimer += Time.deltaTime;
-            if (stuckTimer >= 1.5f && distanceToPlayer > attackRange)
+        // --- Stuck detection with escalating rescue ---
+        // Stage 1: snap to the nearest NavMesh point / leap over the obstruction.
+        // Stage 2+: hard-relocate to a valid NavMesh spot near the player. An enemy the
+        // player has to walk over to is worse than one that visibly repositions.
+        if (distanceToPlayer > attackRange)
+        {
+            float moved = Vector3.Distance(transform.position, lastPosition);
+            if (moved < 0.05f * Time.deltaTime * 60f)
             {
-                StartLeapAttack();
+                stuckTimer += Time.deltaTime;
+            }
+            else
+            {
                 stuckTimer = 0f;
+                rescueStage = 0;
+            }
+
+            if (stuckTimer >= 1.5f)
+            {
+                stuckTimer = 0f;
+                rescueStage++;
+                if (rescueStage == 1) TrySoftRescue();
+                else RelocateNearPlayer();
             }
         }
+        else
+        {
+            stuckTimer = 0f;
+            rescueStage = 0;
+        }
+        lastPosition = transform.position;
 
         // Hover / Hop animation
         AnimateVisuals();
@@ -216,6 +239,51 @@ public class EnemyAI : MonoBehaviour
             StartLeapAttack();
         }
     }
+
+private void TrySoftRescue()
+    {
+        // First choice: snap to the nearest valid NavMesh point.
+        if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 4f, NavMesh.AllAreas))
+        {
+            if (!agent.enabled) agent.enabled = true;
+            agent.Warp(hit.position);
+            if (agent.isOnNavMesh) agent.SetDestination(player.transform.position);
+        }
+        else
+        {
+            // No mesh nearby - try to physically leap out towards the player.
+            StartLeapAttack();
+        }
+    }
+
+    private void RelocateNearPlayer()
+    {
+        rescueStage = 0;
+
+        // Try a ring of positions around the player (never right on top of them).
+        for (int i = 0; i < 12; i++)
+        {
+            float angle = Random.Range(0f, Mathf.PI * 2f);
+            float radius = Random.Range(6f, 14f);
+            Vector3 candidate = player.transform.position + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+            if (NavMesh.SamplePosition(candidate, out NavMeshHit hit, 4f, NavMesh.AllAreas))
+            {
+                if (!agent.enabled) agent.enabled = true;
+                agent.Warp(hit.position);
+                if (agent.isOnNavMesh) agent.SetDestination(player.transform.position);
+                return;
+            }
+        }
+
+        // Last resort: closest mesh point to the player, whatever the distance.
+        if (NavMesh.SamplePosition(player.transform.position, out NavMeshHit fallback, 30f, NavMesh.AllAreas))
+        {
+            if (!agent.enabled) agent.enabled = true;
+            agent.Warp(fallback.position);
+            if (agent.isOnNavMesh) agent.SetDestination(player.transform.position);
+        }
+    }
+
 
     private void AnimateVisuals()
     {
@@ -257,8 +325,25 @@ public class EnemyAI : MonoBehaviour
         visualsTransform.localRotation = Quaternion.Euler(wobblePitch, 0f, wobbleRoll);
     }
 
-    private void StartLeapAttack()
+private void StartLeapAttack()
     {
+        // Leap vector calculation
+        Vector3 direction = (player.transform.position - transform.position);
+        direction.y = 0f;
+        direction.Normalize();
+
+        // Guard against leaping into a wall or low ceiling - skip this leap rather than
+        // launching the enemy through solid geometry, where it can end up wedged/stuck.
+        float forwardCheckDistance = leapForwardSpeed * leapMaxDuration * 0.5f;
+        if (Physics.Raycast(transform.position + Vector3.up * 0.5f, direction, forwardCheckDistance, ~0, QueryTriggerInteraction.Ignore))
+        {
+            return;
+        }
+        if (Physics.Raycast(transform.position + Vector3.up * 0.5f, Vector3.up, 2f, ~0, QueryTriggerInteraction.Ignore))
+        {
+            return;
+        }
+
         isLeaping = true;
         leapTimeLimit = Time.time + leapMaxDuration;
 
@@ -270,11 +355,6 @@ public class EnemyAI : MonoBehaviour
         {
             rb.isKinematic = false;
             rb.useGravity = true;
-
-            // Leap vector calculation
-            Vector3 direction = (player.transform.position - transform.position);
-            direction.y = 0f;
-            direction.Normalize();
 
             // Set velocity
             rb.linearVelocity = new Vector3(direction.x * leapForwardSpeed, leapUpwardSpeed, direction.z * leapForwardSpeed);
@@ -342,7 +422,7 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-    private void EndLeapAttack()
+private void EndLeapAttack()
     {
         isLeaping = false;
         lastAttackTime = Time.time;
@@ -357,6 +437,14 @@ public class EnemyAI : MonoBehaviour
 
         // Re-enable NavMeshAgent
         agent.enabled = true;
+
+        // Safety net: if the landing spot isn't on the NavMesh (e.g. wedged against geometry
+        // from the leap), snap back to the closest valid point so it doesn't stay stuck.
+        if (!agent.isOnNavMesh && NavMesh.SamplePosition(transform.position, out NavMeshHit landHit, 10f, NavMesh.AllAreas))
+        {
+            agent.Warp(landHit.position);
+        }
+
         if (agent.isOnNavMesh)
         {
             agent.SetDestination(player.transform.position);

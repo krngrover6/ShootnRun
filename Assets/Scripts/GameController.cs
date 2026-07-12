@@ -7,6 +7,10 @@ public class GameController : MonoBehaviour
     [Header("Enemy Prefabs")]
     [SerializeField] private GameObject[] enemyPrefabs;
 
+    [Header("Pickup Orbs")]
+    [SerializeField] private GameObject healthOrbPrefab;
+    [SerializeField] private GameObject ammoOrbPrefab;
+
     [Header("Wave Configuration")]
     [SerializeField] private float timeBetweenWaves = 3f;
     [SerializeField] private int baseEnemyCount = 4;
@@ -93,7 +97,7 @@ public class GameController : MonoBehaviour
 
         // Sample position on NavMesh to ensure it spawns exactly on the mesh
         Vector3 spawnPosition = spawnPoint.position;
-        if (UnityEngine.AI.NavMesh.SamplePosition(spawnPoint.position, out UnityEngine.AI.NavMeshHit hit, 15f, UnityEngine.AI.NavMesh.AllAreas))
+        if (UnityEngine.AI.NavMesh.SamplePosition(spawnPoint.position, out UnityEngine.AI.NavMeshHit hit, 5f, UnityEngine.AI.NavMesh.AllAreas))
         {
             spawnPosition = hit.position;
         }
@@ -114,7 +118,7 @@ public class GameController : MonoBehaviour
         activeEnemiesCount++;
     }
 
-    public void OnEnemyKilled()
+public void OnEnemyKilled()
     {
         activeEnemiesCount--;
         
@@ -126,7 +130,29 @@ public class GameController : MonoBehaviour
 
         if (totalRemaining <= 0)
         {
+            SpawnPickupOrbs();
             StartCoroutine(StartNextWaveCo());
         }
     }
+
+private void SpawnPickupOrbs()
+    {
+        var player = FindFirstObjectByType<PlayerHealth>();
+        if (player == null) return;
+
+        Vector3 basePos = player.transform.position + player.transform.forward * 2f;
+
+        if (healthOrbPrefab != null)
+        {
+            Vector3 healthPos = basePos + new Vector3(Random.Range(-1f, 1f), 1f, Random.Range(-1f, 1f));
+            Instantiate(healthOrbPrefab, healthPos, Quaternion.identity);
+        }
+
+        if (ammoOrbPrefab != null)
+        {
+            Vector3 ammoPos = basePos + new Vector3(Random.Range(-1f, 1f), 1f, Random.Range(-1f, 1f));
+            Instantiate(ammoOrbPrefab, ammoPos, Quaternion.identity);
+        }
+    }
+
 }

@@ -45,6 +45,20 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
+public void Heal(float amount)
+    {
+        if (currentHealth <= 0) return;
+
+        currentHealth = amount > 0 ? Mathf.Min(maxHealth, currentHealth + amount) : maxHealth;
+
+        var hud = FindFirstObjectByType<GameHUD>();
+        if (hud != null)
+        {
+            hud.UpdateHealth(currentHealth, maxHealth);
+        }
+    }
+
+
     private void Die()
     {
         // Disable Character movement and weapons script
